@@ -1,4 +1,5 @@
-gradio 
-scikit-learn 
-nltk 
-joblib 
+streamlit
+scikit-learn
+pandas
+numpy
+nltk
