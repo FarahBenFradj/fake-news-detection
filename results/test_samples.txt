@@ -1,0 +1,44 @@
+======================================================================
+TEST SAMPLES - NEVER SEEN BY MODEL
+Use these to verify model predictions on unseen data
+======================================================================
+
+REAL NEWS SAMPLES (Model should predict REAL):
+----------------------------------------------------------------------
+
+Sample 1:
+WASHINGTON (Reuters) - U.S. President Donald Trump will nominate Goldman Sachs (GS.N) banker James Donovan as deputy Treasury secretary, the White House said on Tuesday, adding another alumnus of the Wall Street investment bank to his administration. Treasury Secretary Steven Mnuchin and National Economic Council director Gary Cohn are also former Goldman executives who occupy senior economic posts within the administration. Donovan’s work at the bank as a managing director has included work on ...
+
+Sample 2:
+BAGHDAD (Reuters) - Iraq will deploy troops to regain full control of the Kirkuk oil area and fields surrounding it to restart production suspended by the semi-autonomous region of Kurdistan, a senior Iraqi oil official in Baghdad told Reuters.  Kurdish forces following Erbil orders have deliberately evacuated oil workers from oilfields under its control in Kirkuk, including Bai Hassan and Avana and this reckless action caused the halt of production from these oilfields,  the official said.  We ...
+
+Sample 3:
+LONDON (Reuters) - Britain s government said on Thursday it would use legislation to fix the time and date of the country s European Union exit, addressing concerns of Brexiteers who fear slow negotiations and opposition to the divorce could cause delays.  The government said it was proposing a change to the EU (Withdrawal) Bill currently making its way through parliament to set the exit for 2300 GMT on March 29, 2019.   We ve listened to members of the public and Parliament and have made this c...
+
+Sample 4:
+WASHINGTON (Reuters) - The U.S. presidential race is tied going into the major parties’ national conventions and Democrat Hillary Clinton has been damaged by the FBI investigation into her email use while secretary of state, a new opinion poll showed on Thursday. The New York Times/CBS News poll showed 67 percent of voters surveyed said Clinton was not honest and trustworthy, up 5 percentage points from a CBS poll conducted last month before the FBI made its findings public. As Donald Trump prep...
+
+Sample 5:
+BRUSSELS (Reuters) - European Commission President Jean-Claude Juncker said on Tuesday he approved of Austria s coalition agreement, saying he would judge the government of Christian Democrats and the far-right Freedom Party by its deeds.  As is the case with all governments, we will assess the Austrian government by its deeds,  Juncker told a news conference in Brussels, after meeting with Austria s new Chancellor Sebastian Kurz. Juncker said he believed the coalition agreement showed Austria w...
+
+
+======================================================================
+
+FAKE NEWS SAMPLES (Model should predict FAKE):
+----------------------------------------------------------------------
+
+Sample 1:
+Amateur president Donald Trump s hostility towards the Environmental Protection Agency is revealing by his pick to head the EPA who attacked his own agency during an address to the Conservative Political Action summit last week. The former reality show star is hell bent on raping the environment, this time with an executive order directing the Environmental Protection Agency and the Army Corps of Engineers to consider rolling back a regulation aimed at protecting America s waterways from polluti...
+
+Sample 2:
+By now, the whole world knows that Alabama Senate candidate Roy Moore (R-Of Course) was banned from an Alabama mall and the YMCA for creeping on little girls. He has been accused of molesting young girls as young as age fourteen. Of course, when the allegations first came out and the uproar and backlash began, everyone, regardless of politics, reacted with outrage. However, the GOP s outrage was often much more muted. Further, it took awhile for the Republican National Committee to pull their su...
+
+Sample 3:
+Five Republican presidential hopefuls are scheduled to speak at an ultra-conservative pastor s  religious freedom  event, to prove what the GOP believes religious liberty is REALLY about   i.e. bigotry, exclusion and treating those who live different lifestyles like scum.On Saturday, Jeb Bush, Ben Carson, Ted Cruz, Carly Fiorina and Mike Huckabee will appear on the Free to Believe Broadcast, which is being hosted by the Family Research Council s Tony Perkins and Vision America s Rick Scarborough...
+
+Sample 4:
+Kansas Secretary of State Kris Kobach has reportedly been in the running for Secretary of Homeland Security, and as an early Trump supporter, he s got a pretty good chance of getting a position within the administration.On Sunday, he had a meeting with Trump that lends credence to that assumption. Eager for any political opportunity, he appeared in a photograph with overlord Trump, and in that photograph, papers concerning his plans for our homeland security can be clearly seen.And read.Here s t...
+
+Sample 5:
+The National Fraternal Order of Police knows exactly what the President-elect s values are and knows it s a massive advantage in its quest to return America to a less progressive time.With full knowledge that Donald Trump does not give a damn about minorities and is in full support of profiling African Americans and Hispanics, the National Fraternal Order of Police has called on Trump to reverse or amend the broad, Bush-era ban on racial profiling. The ban on racial profiling has been around sin...
+

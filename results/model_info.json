@@ -1,0 +1,9 @@
+{
+  "model_name": "Logistic Regression",
+  "accuracy": 0.9878592114056582,
+  "precision": 0.9929062768701634,
+  "recall": 0.9838125665601704,
+  "f1_score": 0.988338504332941,
+  "test_size": 8978,
+  "train_size": 35911
+}

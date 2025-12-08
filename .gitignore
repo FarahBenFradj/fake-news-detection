@@ -1,0 +1,17 @@
+# Data
+data/Fake.csv
+data/True.csv
+data/training_data.csv
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
