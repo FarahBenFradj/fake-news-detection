@@ -4,3 +4,5 @@ numpy
 scikit-learn
 nltk
 pickle-mixin
+gradio
+joblib
