@@ -1,10 +1,11 @@
 import streamlit as st
 import re
-import string
+import pandas as pd
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 import nltk
 import pickle
+import os
 
 # Download required NLTK data
 @st.cache_resource
@@ -31,9 +32,7 @@ download_nltk_data()
 # Load model and vectorizer
 @st.cache_resource
 def load_model():
-    import os
-    
-    # Try different file locations
+    """Load the trained model and vectorizer"""
     model_paths = [
         ('models/best_logistic_regression_model.pkl', 'models/best_tfidf_vectorizer.pkl'),
         ('models/fake_news_model.pkl', 'models/tfidf_vectorizer.pkl'),
@@ -51,32 +50,32 @@ def load_model():
         except (FileNotFoundError, Exception):
             continue
     
-    # If all attempts fail
     raise FileNotFoundError("Could not find model files")
 
 def preprocess_text(text):
     """
-    Preprocess text EXACTLY like training code
-    Must match training_api.py preprocessing!
+    Preprocess text EXACTLY matching training_api.py
+    This is CRITICAL for correct predictions!
     """
     if not text or pd.isna(text):
         return ""
     
+    # Convert to string and lowercase
     text = str(text).lower()
     
     # Remove URLs
     text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
     
-    # Remove mentions and hashtags
+    # Remove mentions (@user) and hashtags (#hashtag)
     text = re.sub(r'\@\w+|\#\w+', '', text)
     
-    # Remove special characters (keep only letters and spaces)
+    # Remove special characters - keep only letters and spaces
     text = re.sub(r'[^a-zA-Z\s]', '', text)
     
     # Remove extra whitespace
     text = re.sub(r'\s+', ' ', text).strip()
     
-    # Stop words and lemmatization
+    # Tokenization, stop words removal, and lemmatization
     stop_words = set(stopwords.words('english'))
     lemmatizer = WordNetLemmatizer()
     
@@ -87,11 +86,15 @@ def preprocess_text(text):
     
     return ' '.join(words)
 
-# Page config
+# ============================================================================
+# PAGE CONFIGURATION
+# ============================================================================
+
 st.set_page_config(
-    page_title="Fake News Detector",
+    page_title="🔍 Fake News Detector",
     page_icon="🔍",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # Custom CSS
@@ -99,140 +102,246 @@ st.markdown("""
     <style>
     .main-header {
         text-align: center;
-        padding: 1rem 0;
+        padding: 2rem 0 1rem 0;
     }
-    .stButton>button {
-        width: 100%;
-        background-color: #3498db;
-        color: white;
-        font-weight: bold;
+    .metric-card {
+        background-color: #f0f2f6;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+    }
+    .real-news {
+        border-left: 4px solid #2ecc71;
+    }
+    .fake-news {
+        border-left: 4px solid #e74c3c;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Header
+# ============================================================================
+# HEADER
+# ============================================================================
+
 st.markdown('<div class="main-header">', unsafe_allow_html=True)
 st.title('🔍 Fake News Detection System')
 st.markdown('**Powered by Logistic Regression & Machine Learning**')
 st.markdown('**Accuracy: 98.63% | F1-Score: 0.9852**')
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Load model
+# ============================================================================
+# LOAD MODEL
+# ============================================================================
+
 try:
     model, vectorizer = load_model()
 except Exception as e:
     st.error(f'❌ Error loading model: {str(e)}')
-    st.info("Please make sure these files exist:")
-    st.code("models/best_logistic_regression_model.pkl\nmodels/best_tfidf_vectorizer.pkl")
+    st.error("Model files not found!")
+    st.info("""
+    Please make sure these files exist in your repository:
+    
+    ```
+    models/
+    ├── best_logistic_regression_model.pkl
+    └── best_tfidf_vectorizer.pkl
+    ```
+    
+    Or:
+    ```
+    models/
+    ├── fake_news_model.pkl
+    └── tfidf_vectorizer.pkl
+    ```
+    """)
     st.stop()
 
-# Input section
+# ============================================================================
+# MAIN CONTENT
+# ============================================================================
+
 st.markdown('---')
-st.subheader('📝 Enter News Article')
 
-text_input = st.text_area(
-    'News Text',
-    height=200,
-    placeholder='Paste article text here...',
-    label_visibility='collapsed'
-)
+# Two column layout
+col1, col2 = st.columns([2, 1])
 
-# Example texts
-with st.expander("📋 Try Example Texts"):
-    col1, col2 = st.columns(2)
+with col1:
+    st.subheader('📝 Enter News Article or Headline')
+    text_input = st.text_area(
+        'News Text',
+        height=200,
+        placeholder='Paste your news article, headline, or statement here...',
+        label_visibility='collapsed'
+    )
+
+with col2:
+    st.subheader('📋 Example Texts')
     
-    with col1:
-        if st.button('Real News Example'):
-            text_input = "Scientists at Harvard University have published a new study showing that climate change is accelerating. The research, conducted over 10 years, demonstrates significant warming trends."
+    if st.button('📰 Real News Example', use_container_width=True):
+        text_input = "Government announces new renewable energy initiative. Scientists from leading universities conducted extensive research showing climate change effects."
+        st.session_state.text_input = text_input
     
-    with col2:
-        if st.button('Fake News Example'):
-            text_input = "SHOCKING: This amazing secret will blow your mind! Celebrities HATE this one trick! Click now before it's deleted!"
+    if st.button('⚠️ Fake News Example', use_container_width=True):
+        text_input = "SHOCKING! This amazing secret will blow your mind! You won't believe what doctors don't want you to know! Click here before it's deleted!"
+        st.session_state.text_input = text_input
 
-# Analyze button
-if st.button('🔎 Analyze News', type='primary', use_container_width=True):
-    if text_input.strip():
-        with st.spinner('🔄 Analyzing...'):
+# Use session state if set
+if 'text_input' in st.session_state:
+    text_input = st.session_state.text_input
+
+# ============================================================================
+# ANALYSIS
+# ============================================================================
+
+st.markdown('---')
+
+if st.button('🔎 Analyze News', type='primary', use_container_width=True, key='analyze_btn'):
+    if not text_input.strip():
+        st.warning('⚠️ Please enter some text to analyze')
+    else:
+        with st.spinner('🔄 Analyzing the article...'):
             try:
-                # Preprocess
+                # Preprocess text
                 processed_text = preprocess_text(text_input)
                 
                 if not processed_text.strip():
-                    st.warning('⚠️ Text too short or no meaningful words. Provide more content.')
-                    st.stop()
-                
-                # Vectorize and predict
-                text_vectorized = vectorizer.transform([processed_text])
-                prediction = model.predict(text_vectorized)[0]
-                probability = model.predict_proba(text_vectorized)[0]
-                
-                # Display results
-                st.markdown('---')
-                st.subheader('📊 Results')
-                
-                if prediction == 1:  # FAKE
-                    st.error('### 🚨 LIKELY FAKE NEWS')
-                    confidence = probability[1] * 100
-                else:  # REAL
-                    st.success('### ✅ LIKELY REAL NEWS')
-                    confidence = probability[0] * 100
-                
-                # Confidence
-                st.metric('Confidence', f'{confidence:.1f}%')
-                st.progress(confidence / 100)
-                
-                # Detailed breakdown
-                st.markdown('---')
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.metric(
-                        'Real News Score',
-                        f'{probability[0]*100:.1f}%'
+                    st.warning('⚠️ The text is too short or contains no meaningful words after processing.')
+                    st.info('Try adding more content to your text.')
+                else:
+                    # Vectorize
+                    text_vectorized = vectorizer.transform([processed_text])
+                    
+                    # Predict
+                    prediction = model.predict(text_vectorized)[0]
+                    probabilities = model.predict_proba(text_vectorized)[0]
+                    
+                    prob_real = probabilities[0]
+                    prob_fake = probabilities[1]
+                    
+                    # Display results
+                    st.markdown('---')
+                    st.subheader('📊 Analysis Results')
+                    
+                    # Main prediction
+                    if prediction == 1:  # FAKE NEWS
+                        st.error('### 🚨 LIKELY FAKE NEWS')
+                        st.markdown(
+                            'This article shows patterns and characteristics typical of fake or misleading news.'
+                        )
+                        confidence = prob_fake * 100
+                    else:  # REAL NEWS
+                        st.success('### ✅ LIKELY REAL NEWS')
+                        st.markdown(
+                            'This article appears to be legitimate news based on linguistic and textual analysis.'
+                        )
+                        confidence = prob_real * 100
+                    
+                    # Confidence display
+                    st.markdown('---')
+                    
+                    # Three columns for metrics
+                    metric_col1, metric_col2, metric_col3 = st.columns(3)
+                    
+                    with metric_col1:
+                        st.metric(
+                            label='Primary Confidence',
+                            value=f'{confidence:.1f}%',
+                            delta='Strong' if confidence > 85 else 'Moderate' if confidence > 70 else 'Weak'
+                        )
+                    
+                    with metric_col2:
+                        st.metric(
+                            label='Real News Score',
+                            value=f'{prob_real*100:.1f}%'
+                        )
+                    
+                    with metric_col3:
+                        st.metric(
+                            label='Fake News Score',
+                            value=f'{prob_fake*100:.1f}%'
+                        )
+                    
+                    # Confidence bar
+                    st.markdown('**Confidence Distribution:**')
+                    col1, col2 = st.columns([prob_real, prob_fake], gap='small')
+                    with col1:
+                        st.metric('Real', f'{prob_real*100:.1f}%', label_visibility='collapsed')
+                    with col2:
+                        st.metric('Fake', f'{prob_fake*100:.1f}%', label_visibility='collapsed')
+                    
+                    st.progress(max(prob_real, prob_fake))
+                    
+                    # Information box
+                    st.markdown('---')
+                    st.info(
+                        '💡 **Remember:** Always verify news from multiple credible sources. '
+                        'This tool analyzes text patterns but is not 100% accurate.'
                     )
-                
-                with col2:
-                    st.metric(
-                        'Fake News Score',
-                        f'{probability[1]*100:.1f}%'
-                    )
-                
-                # Info
-                st.info('💡 Always verify important news from multiple reliable sources.')
-                
+                    
             except Exception as e:
-                st.error(f'❌ Prediction error: {str(e)}')
-    else:
-        st.warning('⚠️ Please enter text to analyze')
+                st.error(f'❌ Error during analysis: {str(e)}')
+                st.exception(e)
 
-# Footer
+# ============================================================================
+# SIDEBAR - HOW IT WORKS
+# ============================================================================
+
+with st.sidebar:
+    st.header('ℹ️ About This Tool')
+    
+    st.subheader('🤖 Model Details')
+    st.markdown('''
+        **Algorithm:** Logistic Regression
+        
+        **Feature Extraction:** TF-IDF
+        - Maximum Features: 5,000
+        - N-gram Range: 1-2 (unigrams + bigrams)
+        - Min Document Frequency: 2
+    ''')
+    
+    st.subheader('🔍 How It Works')
+    st.markdown('''
+        1. **Preprocessing:** Text is cleaned and normalized
+        2. **Lemmatization:** Words reduced to base form
+        3. **Vectorization:** Text converted to TF-IDF features
+        4. **Classification:** Logistic Regression predicts
+        5. **Confidence:** Probability score calculated
+    ''')
+    
+    st.subheader('📈 Model Performance')
+    st.markdown(f'''
+        - **Accuracy:** 98.63%
+        - **Precision:** 98.97%
+        - **Recall:** 98.07%
+        - **F1-Score:** 0.9852
+        - **Inference Speed:** <50ms
+    ''')
+    
+    st.subheader('⚙️ Preprocessing Steps')
+    st.markdown('''
+        1. Convert to lowercase
+        2. Remove URLs and links
+        3. Remove mentions and hashtags
+        4. Remove special characters
+        5. Remove stop words (the, a, is, etc.)
+        6. Lemmatization (running → run)
+        7. Keep only words longer than 2 chars
+    ''')
+    
+    st.markdown('---')
+    st.markdown(
+        '**Built with:** Streamlit | **Model:** Scikit-learn | **NLP:** NLTK'
+    )
+
+# ============================================================================
+# FOOTER
+# ============================================================================
+
 st.markdown('---')
 st.markdown('''
-    <div style="text-align: center; color: gray; font-size: 0.85em;">
-        <p><strong>Disclaimer:</strong> ML model may not be 100% accurate.</p>
-        <p>Built with Streamlit | Model: Logistic Regression (TF-IDF)</p>
+    <div style="text-align: center; color: gray; font-size: 0.85em; padding: 1rem;">
+        <p><strong>⚖️ Disclaimer:</strong> This machine learning model may not be 100% accurate. 
+        Always verify important news from multiple reliable and credible sources.</p>
+        <p>Fake News Detection System | Powered by ML</p>
     </div>
 ''', unsafe_allow_html=True)
-
-# Sidebar
-with st.sidebar:
-    st.header('ℹ️ How It Works')
-    st.markdown('''
-        **Model:** Logistic Regression
-        
-        **Features:** TF-IDF Vectorization
-        - 5,000 top features
-        - Unigrams + Bigrams
-        
-        **Preprocessing:**
-        1. Lowercase
-        2. Remove URLs
-        3. Remove special chars
-        4. Lemmatization
-        5. Stop words removal
-        
-        **Performance:**
-        - Accuracy: 98.63%
-        - Precision: 98.97%
-        - Recall: 98.07%
-    ''')
