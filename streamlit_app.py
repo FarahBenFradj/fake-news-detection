@@ -18,9 +18,9 @@ except LookupError:
 # Load model and vectorizer
 @st.cache_resource
 def load_model():
-    with open('model/best_logistic_regression_model.pkl', 'rb') as f:
+    with open('models/best_logistic_regression_model.pkl', 'rb') as f:
         model = pickle.load(f)
-    with open('model/tfidf_vectorizer.pkl', 'rb') as f:
+    with open('models/tfidf_vectorizer.pkl', 'rb') as f:
         vectorizer = pickle.load(f)
     return model, vectorizer
 
