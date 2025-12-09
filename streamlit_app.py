@@ -5,9 +5,11 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 import nltk
 import pickle
-import joblib  # Better for sklearn models
+import joblib
 import os
 import requests
+import json
+import random
 
 # Download required NLTK data
 @st.cache_resource
@@ -30,6 +32,20 @@ def download_nltk_data():
         nltk.download('omw-1.4')
 
 download_nltk_data()
+
+# Load test samples from GitHub
+@st.cache_resource
+def load_test_samples():
+    """Load test samples from your GitHub repository"""
+    try:
+        url = "https://raw.githubusercontent.com/FarahBenFradj/fake-news-detection/main/results/test_samples.json"
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        test_samples = response.json()
+        return test_samples
+    except Exception as e:
+        st.warning(f"Could not load test samples from GitHub: {e}")
+        return None
 
 # Load model and vectorizer
 @st.cache_resource
@@ -239,6 +255,12 @@ except Exception as e:
     st.stop()
 
 # ============================================================================
+# LOAD TEST SAMPLES
+# ============================================================================
+
+test_samples = load_test_samples()
+
+# ============================================================================
 # MAIN CONTENT
 # ============================================================================
 
@@ -253,23 +275,43 @@ with col1:
         'News Text',
         height=200,
         placeholder='Paste your news article, headline, or statement here...',
-        label_visibility='collapsed'
+        label_visibility='collapsed',
+        key='main_text_input'
     )
 
 with col2:
     st.subheader('📋 Example Texts')
     
-    if st.button('📰 Real News Example', use_container_width=True):
-        text_input = "Government announces new renewable energy initiative. Scientists from leading universities conducted extensive research showing climate change effects."
-        st.session_state.text_input = text_input
-    
-    if st.button('⚠️ Fake News Example', use_container_width=True):
-        text_input = "SHOCKING! This amazing secret will blow your mind! You won't believe what doctors don't want you to know! Click here before it's deleted!"
-        st.session_state.text_input = text_input
+    # Load examples from test_samples.json
+    if test_samples:
+        if st.button('📰 Real News Example', use_container_width=True):
+            # Get a random real news sample
+            real_samples = test_samples.get('real_samples', [])
+            if real_samples:
+                sample = random.choice(real_samples)
+                st.session_state['text_input'] = sample.get('full_text', '')
+                st.rerun()
+        
+        if st.button('⚠️ Fake News Example', use_container_width=True):
+            # Get a random fake news sample
+            fake_samples = test_samples.get('fake_samples', [])
+            if fake_samples:
+                sample = random.choice(fake_samples)
+                st.session_state['text_input'] = sample.get('full_text', '')
+                st.rerun()
+    else:
+        # Fallback examples if test_samples.json can't be loaded
+        if st.button('📰 Real News Example', use_container_width=True):
+            st.session_state['text_input'] = "Government announces new renewable energy initiative. Scientists from leading universities conducted extensive research showing climate change effects."
+            st.rerun()
+        
+        if st.button('⚠️ Fake News Example', use_container_width=True):
+            st.session_state['text_input'] = "SHOCKING! This amazing secret will blow your mind! You won't believe what doctors don't want you to know! Click here before it's deleted!"
+            st.rerun()
 
 # Use session state if set
 if 'text_input' in st.session_state:
-    text_input = st.session_state.text_input
+    text_input = st.session_state['text_input']
 
 # ============================================================================
 # ANALYSIS
