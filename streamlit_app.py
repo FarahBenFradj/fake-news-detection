@@ -6,6 +6,7 @@ from nltk.stem import WordNetLemmatizer
 import nltk
 import pickle
 import os
+import urllib.request  # ADDED: Missing import
 
 # Download required NLTK data
 @st.cache_resource
@@ -34,17 +35,17 @@ download_nltk_data()
 def load_model():
     """Load the trained model and vectorizer from GitHub Release"""
     
-    # URLs de tes models sur GitHub Release
+    # URLs from your GitHub Release
     MODEL_URL = "https://github.com/FarahBenFradj/fake-news-detection/releases/download/v1.0.0/best_logistic_regression_model.pkl"
     VECTORIZER_URL = "https://github.com/FarahBenFradj/fake-news-detection/releases/download/v1.0.0/best_tfidf_vectorizer.pkl"
     
-    # Créer le dossier models s'il n'existe pas
+    # Create models folder if it doesn't exist
     os.makedirs('models', exist_ok=True)
     
     model_path = 'models/best_logistic_regression_model.pkl'
     vectorizer_path = 'models/best_tfidf_vectorizer.pkl'
     
-    # Télécharger le model si pas présent
+    # Download model if not present
     if not os.path.exists(model_path):
         st.info("📥 Downloading model from GitHub Release...")
         try:
@@ -54,7 +55,7 @@ def load_model():
             st.error(f"❌ Failed to download model: {e}")
             raise
     
-    # Télécharger le vectorizer si pas présent
+    # Download vectorizer if not present
     if not os.path.exists(vectorizer_path):
         st.info("📥 Downloading vectorizer from GitHub Release...")
         try:
@@ -64,7 +65,7 @@ def load_model():
             st.error(f"❌ Failed to download vectorizer: {e}")
             raise
     
-    # Charger les fichiers
+    # Load the files
     try:
         with open(model_path, 'rb') as f:
             model = pickle.load(f)
@@ -162,20 +163,10 @@ except Exception as e:
     st.error(f'❌ Error loading model: {str(e)}')
     st.error("Model files not found!")
     st.info("""
-    Please make sure these files exist in your repository:
+    Please make sure these files exist in your GitHub Release:
     
-    ```
-    models/
-    ├── best_logistic_regression_model.pkl
-    └── best_tfidf_vectorizer.pkl
-    ```
-    
-    Or:
-    ```
-    models/
-    ├── fake_news_model.pkl
-    └── tfidf_vectorizer.pkl
-    ```
+    - best_logistic_regression_model.pkl
+    - best_tfidf_vectorizer.pkl
     """)
     st.stop()
 
