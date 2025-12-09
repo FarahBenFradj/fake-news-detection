@@ -33,9 +33,9 @@ def download_nltk_data():
 
 download_nltk_data()
 
-# Initialize session state FIRST
-if 'main_text_input' not in st.session_state:
-    st.session_state['main_text_input'] = ""
+# Initialize session state FIRST - BEFORE any widgets
+if 'sample_text' not in st.session_state:
+    st.session_state['sample_text'] = ""
 
 # Load test samples from GitHub
 @st.cache_resource
@@ -292,13 +292,13 @@ if 'text_input' not in st.session_state:
 
 with col1:
     st.subheader('📝 Enter News Article or Headline')
-    # Use key directly for two-way binding
+    # Use session state value, NOT the key parameter
     text_input = st.text_area(
         'News Text',
+        value=st.session_state.get('sample_text', ''),
         height=200,
         placeholder='Paste your news article, headline, or statement here...',
-        label_visibility='collapsed',
-        key='main_text_input'
+        label_visibility='collapsed'
     )
 
 with col2:
@@ -315,8 +315,8 @@ with col2:
                     sample = random.choice(real_samples)
                     full_text = sample.get('full_text', sample.get('text', ''))
                     if full_text:
-                        # Update directly through session state
-                        st.session_state['main_text_input'] = full_text
+                        st.session_state['sample_text'] = full_text
+                        st.rerun()
         
         with col_fake:
             if st.button('⚠️ Fake News', use_container_width=True, key='fake_btn'):
@@ -325,8 +325,8 @@ with col2:
                     sample = random.choice(fake_samples)
                     full_text = sample.get('full_text', sample.get('text', ''))
                     if full_text:
-                        # Update directly through session state
-                        st.session_state['main_text_input'] = full_text
+                        st.session_state['sample_text'] = full_text
+                        st.rerun()
     else:
         # Fallback examples if test_samples.json can't be loaded
         st.warning("⚠️ Could not load real examples from GitHub")
@@ -334,11 +334,13 @@ with col2:
         
         with col_real:
             if st.button('📰 Real News', use_container_width=True, key='real_btn_fallback'):
-                st.session_state['main_text_input'] = "WASHINGTON (Reuters) - U.S. President Donald Trump will nominate Goldman Sachs banker James Donovan as deputy Treasury secretary, the White House said on Tuesday. Treasury Secretary Steven Mnuchin and National Economic Council director Gary Cohn are also former Goldman executives who occupy senior economic posts within the administration."
+                st.session_state['sample_text'] = "WASHINGTON (Reuters) - U.S. President Donald Trump will nominate Goldman Sachs banker James Donovan as deputy Treasury secretary, the White House said on Tuesday. Treasury Secretary Steven Mnuchin and National Economic Council director Gary Cohn are also former Goldman executives who occupy senior economic posts within the administration."
+                st.rerun()
         
         with col_fake:
             if st.button('⚠️ Fake News', use_container_width=True, key='fake_btn_fallback'):
-                st.session_state['main_text_input'] = "SHOCKING! This amazing secret will blow your mind! You won't believe what doctors don't want you to know! Click here before it's deleted! This incredible discovery could change your life forever!"
+                st.session_state['sample_text'] = "SHOCKING! This amazing secret will blow your mind! You won't believe what doctors don't want you to know! Click here before it's deleted! This incredible discovery could change your life forever!"
+                st.rerun()
 
 # ============================================================================
 # ANALYSIS
