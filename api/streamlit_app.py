@@ -42,9 +42,22 @@ def load_test_samples():
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         test_samples = response.json()
-        return test_samples
+        
+        # Verify the structure
+        if 'real_samples' in test_samples and 'fake_samples' in test_samples:
+            return test_samples
+        else:
+            st.error("Test samples JSON has invalid structure")
+            return None
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ Could not load test samples from GitHub: {e}")
+        st.error(f"URL tried: https://raw.githubusercontent.com/FarahBenFradj/fake-news-detection/main/results/test_samples.json")
+        return None
+    except json.JSONDecodeError as e:
+        st.error(f"❌ Invalid JSON format: {e}")
+        return None
     except Exception as e:
-        st.warning(f"Could not load test samples from GitHub: {e}")
+        st.error(f"❌ Unexpected error loading test samples: {e}")
         return None
 
 # Load model and vectorizer
@@ -289,32 +302,47 @@ with col1:
 with col2:
     st.subheader('📋 Example Texts')
     
+    col_real, col_fake = st.columns(2)
+    
     # Load examples from test_samples.json
-    if test_samples:
-        if st.button('📰 Real News Example', use_container_width=True):
-            # Get a random real news sample
-            real_samples = test_samples.get('real_samples', [])
-            if real_samples:
-                sample = random.choice(real_samples)
-                st.session_state['text_input'] = sample.get('full_text', '')
-                st.rerun()
+    if test_samples and 'real_samples' in test_samples and 'fake_samples' in test_samples:
+        with col_real:
+            if st.button('📰 Real News', use_container_width=True):
+                real_samples = test_samples.get('real_samples', [])
+                if real_samples:
+                    sample = random.choice(real_samples)
+                    full_text = sample.get('full_text', sample.get('text', ''))
+                    if full_text:
+                        st.session_state['text_input'] = full_text
+                        st.rerun()
+                    else:
+                        st.error("No text found in sample")
         
-        if st.button('⚠️ Fake News Example', use_container_width=True):
-            # Get a random fake news sample
-            fake_samples = test_samples.get('fake_samples', [])
-            if fake_samples:
-                sample = random.choice(fake_samples)
-                st.session_state['text_input'] = sample.get('full_text', '')
-                st.rerun()
+        with col_fake:
+            if st.button('⚠️ Fake News', use_container_width=True):
+                fake_samples = test_samples.get('fake_samples', [])
+                if fake_samples:
+                    sample = random.choice(fake_samples)
+                    full_text = sample.get('full_text', sample.get('text', ''))
+                    if full_text:
+                        st.session_state['text_input'] = full_text
+                        st.rerun()
+                    else:
+                        st.error("No text found in sample")
     else:
         # Fallback examples if test_samples.json can't be loaded
-        if st.button('📰 Real News Example', use_container_width=True):
-            st.session_state['text_input'] = "Government announces new renewable energy initiative. Scientists from leading universities conducted extensive research showing climate change effects."
-            st.rerun()
+        st.warning("⚠️ Could not load real examples from GitHub")
+        st.info("Using hardcoded examples instead")
         
-        if st.button('⚠️ Fake News Example', use_container_width=True):
-            st.session_state['text_input'] = "SHOCKING! This amazing secret will blow your mind! You won't believe what doctors don't want you to know! Click here before it's deleted!"
-            st.rerun()
+        with col_real:
+            if st.button('📰 Real News', use_container_width=True):
+                st.session_state['text_input'] = "WASHINGTON (Reuters) - U.S. President Donald Trump will nominate Goldman Sachs banker James Donovan as deputy Treasury secretary, the White House said on Tuesday. Treasury Secretary Steven Mnuchin and National Economic Council director Gary Cohn are also former Goldman executives who occupy senior economic posts within the administration."
+                st.rerun()
+        
+        with col_fake:
+            if st.button('⚠️ Fake News', use_container_width=True):
+                st.session_state['text_input'] = "SHOCKING! This amazing secret will blow your mind! You won't believe what doctors don't want you to know! Click here before it's deleted! This incredible discovery could change your life forever!"
+                st.rerun()
 
 # ============================================================================
 # ANALYSIS
