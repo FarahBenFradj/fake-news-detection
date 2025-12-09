@@ -6,7 +6,7 @@ from nltk.stem import WordNetLemmatizer
 import nltk
 import pickle
 import os
-import urllib.request  # ADDED: Missing import
+import requests  # Better than urllib for downloads
 
 # Download required NLTK data
 @st.cache_resource
@@ -49,20 +49,54 @@ def load_model():
     if not os.path.exists(model_path):
         st.info("📥 Downloading model from GitHub Release...")
         try:
-            urllib.request.urlretrieve(MODEL_URL, model_path)
+            response = requests.get(MODEL_URL, allow_redirects=True)
+            response.raise_for_status()
+            
+            # Verify content is binary (pickle file)
+            if response.headers.get('content-type', '').startswith('text/html'):
+                raise Exception("GitHub returned HTML instead of file. Check if release exists.")
+            
+            with open(model_path, 'wb') as f:
+                f.write(response.content)
+            
+            # Verify the file is valid pickle
+            with open(model_path, 'rb') as f:
+                header = f.read(10)
+                if not (header[:2] == b'\x80\x03' or header[:2] == b'\x80\x04' or header[:2] == b'\x80\x05'):
+                    raise Exception("Downloaded file is not a valid pickle file")
+            
             st.success("✅ Model downloaded successfully!")
         except Exception as e:
             st.error(f"❌ Failed to download model: {e}")
+            if os.path.exists(model_path):
+                os.remove(model_path)
             raise
     
     # Download vectorizer if not present
     if not os.path.exists(vectorizer_path):
         st.info("📥 Downloading vectorizer from GitHub Release...")
         try:
-            urllib.request.urlretrieve(VECTORIZER_URL, vectorizer_path)
+            response = requests.get(VECTORIZER_URL, allow_redirects=True)
+            response.raise_for_status()
+            
+            # Verify content is binary (pickle file)
+            if response.headers.get('content-type', '').startswith('text/html'):
+                raise Exception("GitHub returned HTML instead of file. Check if release exists.")
+            
+            with open(vectorizer_path, 'wb') as f:
+                f.write(response.content)
+            
+            # Verify the file is valid pickle
+            with open(vectorizer_path, 'rb') as f:
+                header = f.read(10)
+                if not (header[:2] == b'\x80\x03' or header[:2] == b'\x80\x04' or header[:2] == b'\x80\x05'):
+                    raise Exception("Downloaded file is not a valid pickle file")
+            
             st.success("✅ Vectorizer downloaded successfully!")
         except Exception as e:
             st.error(f"❌ Failed to download vectorizer: {e}")
+            if os.path.exists(vectorizer_path):
+                os.remove(vectorizer_path)
             raise
     
     # Load the files
@@ -74,6 +108,12 @@ def load_model():
         return model, vectorizer
     except Exception as e:
         st.error(f"❌ Error loading model files: {e}")
+        st.info("💡 Try deleting the 'models' folder and restart the app")
+        # Clean up corrupted files
+        if os.path.exists(model_path):
+            os.remove(model_path)
+        if os.path.exists(vectorizer_path):
+            os.remove(vectorizer_path)
         raise
 
 def preprocess_text(text):
