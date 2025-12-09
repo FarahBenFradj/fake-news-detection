@@ -32,25 +32,48 @@ download_nltk_data()
 # Load model and vectorizer
 @st.cache_resource
 def load_model():
-    """Load the trained model and vectorizer"""
-    model_paths = [
-        ('models/best_logistic_regression_model.pkl', 'models/best_tfidf_vectorizer.pkl'),
-        ('models/fake_news_model.pkl', 'models/tfidf_vectorizer.pkl'),
-        ('best_logistic_regression_model.pkl', 'best_tfidf_vectorizer.pkl'),
-        ('fake_news_model.pkl', 'tfidf_vectorizer.pkl'),
-    ]
+    """Load the trained model and vectorizer from GitHub Release"""
     
-    for model_path, vectorizer_path in model_paths:
+    # URLs de tes models sur GitHub Release
+    MODEL_URL = "https://github.com/FarahBenFradj/fake-news-detection/releases/download/v1.0.0/best_logistic_regression_model.pkl"
+    VECTORIZER_URL = "https://github.com/FarahBenFradj/fake-news-detection/releases/download/v1.0.0/best_tfidf_vectorizer.pkl"
+    
+    # Créer le dossier models s'il n'existe pas
+    os.makedirs('models', exist_ok=True)
+    
+    model_path = 'models/best_logistic_regression_model.pkl'
+    vectorizer_path = 'models/best_tfidf_vectorizer.pkl'
+    
+    # Télécharger le model si pas présent
+    if not os.path.exists(model_path):
+        st.info("📥 Downloading model from GitHub Release...")
         try:
-            with open(model_path, 'rb') as f:
-                model = pickle.load(f)
-            with open(vectorizer_path, 'rb') as f:
-                vectorizer = pickle.load(f)
-            return model, vectorizer
-        except (FileNotFoundError, Exception):
-            continue
+            urllib.request.urlretrieve(MODEL_URL, model_path)
+            st.success("✅ Model downloaded successfully!")
+        except Exception as e:
+            st.error(f"❌ Failed to download model: {e}")
+            raise
     
-    raise FileNotFoundError("Could not find model files")
+    # Télécharger le vectorizer si pas présent
+    if not os.path.exists(vectorizer_path):
+        st.info("📥 Downloading vectorizer from GitHub Release...")
+        try:
+            urllib.request.urlretrieve(VECTORIZER_URL, vectorizer_path)
+            st.success("✅ Vectorizer downloaded successfully!")
+        except Exception as e:
+            st.error(f"❌ Failed to download vectorizer: {e}")
+            raise
+    
+    # Charger les fichiers
+    try:
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        with open(vectorizer_path, 'rb') as f:
+            vectorizer = pickle.load(f)
+        return model, vectorizer
+    except Exception as e:
+        st.error(f"❌ Error loading model files: {e}")
+        raise
 
 def preprocess_text(text):
     """
