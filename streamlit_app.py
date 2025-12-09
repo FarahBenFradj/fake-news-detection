@@ -5,8 +5,9 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 import nltk
 import pickle
+import joblib  # Better for sklearn models
 import os
-import requests  # Better than urllib for downloads
+import requests
 
 # Download required NLTK data
 @st.cache_resource
@@ -45,46 +46,20 @@ def load_model():
     model_path = 'models/best_logistic_regression_model.pkl'
     vectorizer_path = 'models/best_tfidf_vectorizer.pkl'
     
-    # Force re-download by removing old files (for debugging)
-    # Comment this out once working
-    if os.path.exists(model_path):
-        os.remove(model_path)
-    if os.path.exists(vectorizer_path):
-        os.remove(vectorizer_path)
-    
     # Download model if not present
     if not os.path.exists(model_path):
         st.info("📥 Downloading model from GitHub Release...")
         try:
             response = requests.get(MODEL_URL, allow_redirects=True, timeout=30)
-            
-            # DIAGNOSTIC INFO
-            st.write(f"🔍 Response status: {response.status_code}")
-            st.write(f"🔍 Content-Type: {response.headers.get('content-type', 'unknown')}")
-            st.write(f"🔍 Content length: {len(response.content)} bytes")
-            
-            # Show first 100 bytes
-            st.write(f"🔍 First 100 bytes: {response.content[:100]}")
-            
             response.raise_for_status()
             
             # Check if it's HTML (error page)
             if response.content[:15].lower().startswith(b'<!doctype html') or response.content[:6].lower() == b'<html>':
-                st.error("❌ GitHub returned an HTML page instead of the pickle file!")
-                st.error("This means the release URL is incorrect or the file doesn't exist.")
-                st.info("Please check your GitHub release and ensure the files are uploaded correctly.")
                 raise Exception("GitHub returned HTML instead of pickle file")
             
             # Save file
             with open(model_path, 'wb') as f:
                 f.write(response.content)
-            
-            # Verify pickle
-            with open(model_path, 'rb') as f:
-                header = f.read(10)
-                st.write(f"🔍 File header: {header}")
-                if not (header[:2] == b'\x80\x03' or header[:2] == b'\x80\x04' or header[:2] == b'\x80\x05'):
-                    raise Exception(f"Invalid pickle header: {header[:2]}")
             
             st.success("✅ Model downloaded successfully!")
         except Exception as e:
@@ -107,12 +82,6 @@ def load_model():
             with open(vectorizer_path, 'wb') as f:
                 f.write(response.content)
             
-            # Verify pickle
-            with open(vectorizer_path, 'rb') as f:
-                header = f.read(10)
-                if not (header[:2] == b'\x80\x03' or header[:2] == b'\x80\x04' or header[:2] == b'\x80\x05'):
-                    raise Exception(f"Invalid pickle header: {header[:2]}")
-            
             st.success("✅ Vectorizer downloaded successfully!")
         except Exception as e:
             st.error(f"❌ Failed to download vectorizer: {e}")
@@ -120,16 +89,55 @@ def load_model():
                 os.remove(vectorizer_path)
             raise
     
-    # Load the files
+    # Load the files - try multiple methods
     try:
-        with open(model_path, 'rb') as f:
-            model = pickle.load(f)
-        with open(vectorizer_path, 'rb') as f:
-            vectorizer = pickle.load(f)
-        return model, vectorizer
+        # Method 1: Try with joblib (best for sklearn)
+        try:
+            st.info("🔄 Loading models with joblib...")
+            model = joblib.load(model_path)
+            vectorizer = joblib.load(vectorizer_path)
+            st.success("✅ Models loaded with joblib!")
+            return model, vectorizer
+        except Exception as e1:
+            st.warning(f"Joblib failed: {str(e1)[:100]}")
+            
+            # Method 2: Try standard pickle
+            try:
+                st.info("🔄 Trying standard pickle...")
+                with open(model_path, 'rb') as f:
+                    model = pickle.load(f)
+                with open(vectorizer_path, 'rb') as f:
+                    vectorizer = pickle.load(f)
+                st.success("✅ Models loaded with pickle!")
+                return model, vectorizer
+            except Exception as e2:
+                st.warning(f"Standard pickle failed: {str(e2)[:100]}")
+                
+                # Method 3: Try with encoding
+                try:
+                    st.info("🔄 Trying with latin1 encoding...")
+                    with open(model_path, 'rb') as f:
+                        model = pickle.load(f, encoding='latin1')
+                    with open(vectorizer_path, 'rb') as f:
+                        vectorizer = pickle.load(f, encoding='latin1')
+                    st.success("✅ Models loaded with encoding!")
+                    return model, vectorizer
+                except Exception as e3:
+                    st.error(f"All loading methods failed!")
+                    st.error(f"Error: {str(e3)}")
+                    raise e3
+                    
     except Exception as e:
-        st.error(f"❌ Error loading model files: {e}")
-        # Clean up corrupted files
+        st.error(f"❌ Cannot load model files: {e}")
+        st.error("⚠️ Your pickle files may have been created with an incompatible Python/scikit-learn version")
+        
+        # Show detailed error info
+        st.error("**Debugging Info:**")
+        st.code(f"Python version on server: {st.session_state.get('python_version', 'unknown')}")
+        st.code(f"Error type: {type(e).__name__}")
+        st.code(f"Error message: {str(e)}")
+        
+        # Clean up
         if os.path.exists(model_path):
             os.remove(model_path)
         if os.path.exists(vectorizer_path):
