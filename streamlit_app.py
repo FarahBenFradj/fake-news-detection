@@ -45,25 +45,46 @@ def load_model():
     model_path = 'models/best_logistic_regression_model.pkl'
     vectorizer_path = 'models/best_tfidf_vectorizer.pkl'
     
+    # Force re-download by removing old files (for debugging)
+    # Comment this out once working
+    if os.path.exists(model_path):
+        os.remove(model_path)
+    if os.path.exists(vectorizer_path):
+        os.remove(vectorizer_path)
+    
     # Download model if not present
     if not os.path.exists(model_path):
         st.info("📥 Downloading model from GitHub Release...")
         try:
-            response = requests.get(MODEL_URL, allow_redirects=True)
+            response = requests.get(MODEL_URL, allow_redirects=True, timeout=30)
+            
+            # DIAGNOSTIC INFO
+            st.write(f"🔍 Response status: {response.status_code}")
+            st.write(f"🔍 Content-Type: {response.headers.get('content-type', 'unknown')}")
+            st.write(f"🔍 Content length: {len(response.content)} bytes")
+            
+            # Show first 100 bytes
+            st.write(f"🔍 First 100 bytes: {response.content[:100]}")
+            
             response.raise_for_status()
             
-            # Verify content is binary (pickle file)
-            if response.headers.get('content-type', '').startswith('text/html'):
-                raise Exception("GitHub returned HTML instead of file. Check if release exists.")
+            # Check if it's HTML (error page)
+            if response.content[:15].lower().startswith(b'<!doctype html') or response.content[:6].lower() == b'<html>':
+                st.error("❌ GitHub returned an HTML page instead of the pickle file!")
+                st.error("This means the release URL is incorrect or the file doesn't exist.")
+                st.info("Please check your GitHub release and ensure the files are uploaded correctly.")
+                raise Exception("GitHub returned HTML instead of pickle file")
             
+            # Save file
             with open(model_path, 'wb') as f:
                 f.write(response.content)
             
-            # Verify the file is valid pickle
+            # Verify pickle
             with open(model_path, 'rb') as f:
                 header = f.read(10)
+                st.write(f"🔍 File header: {header}")
                 if not (header[:2] == b'\x80\x03' or header[:2] == b'\x80\x04' or header[:2] == b'\x80\x05'):
-                    raise Exception("Downloaded file is not a valid pickle file")
+                    raise Exception(f"Invalid pickle header: {header[:2]}")
             
             st.success("✅ Model downloaded successfully!")
         except Exception as e:
@@ -76,21 +97,21 @@ def load_model():
     if not os.path.exists(vectorizer_path):
         st.info("📥 Downloading vectorizer from GitHub Release...")
         try:
-            response = requests.get(VECTORIZER_URL, allow_redirects=True)
+            response = requests.get(VECTORIZER_URL, allow_redirects=True, timeout=30)
             response.raise_for_status()
             
-            # Verify content is binary (pickle file)
-            if response.headers.get('content-type', '').startswith('text/html'):
-                raise Exception("GitHub returned HTML instead of file. Check if release exists.")
+            # Check if it's HTML
+            if response.content[:15].lower().startswith(b'<!doctype html') or response.content[:6].lower() == b'<html>':
+                raise Exception("GitHub returned HTML instead of pickle file")
             
             with open(vectorizer_path, 'wb') as f:
                 f.write(response.content)
             
-            # Verify the file is valid pickle
+            # Verify pickle
             with open(vectorizer_path, 'rb') as f:
                 header = f.read(10)
                 if not (header[:2] == b'\x80\x03' or header[:2] == b'\x80\x04' or header[:2] == b'\x80\x05'):
-                    raise Exception("Downloaded file is not a valid pickle file")
+                    raise Exception(f"Invalid pickle header: {header[:2]}")
             
             st.success("✅ Vectorizer downloaded successfully!")
         except Exception as e:
@@ -108,7 +129,6 @@ def load_model():
         return model, vectorizer
     except Exception as e:
         st.error(f"❌ Error loading model files: {e}")
-        st.info("💡 Try deleting the 'models' folder and restart the app")
         # Clean up corrupted files
         if os.path.exists(model_path):
             os.remove(model_path)

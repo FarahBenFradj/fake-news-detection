@@ -8,14 +8,3 @@ font = "sans serif"
 [server]
 maxUploadSize = 200
 enableXsrfProtection = false
-```
-
-### **4. Créer `.gitignore`**
-```
-__pycache__/
-*.pyc
-*.pkl
-models/
-venv/
-.env
-.DS_Store
