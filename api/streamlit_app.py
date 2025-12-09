@@ -33,6 +33,10 @@ def download_nltk_data():
 
 download_nltk_data()
 
+# Initialize session state FIRST
+if 'main_text_input' not in st.session_state:
+    st.session_state['main_text_input'] = ""
+
 # Load test samples from GitHub
 @st.cache_resource
 def load_test_samples():
@@ -288,16 +292,14 @@ if 'text_input' not in st.session_state:
 
 with col1:
     st.subheader('📝 Enter News Article or Headline')
+    # Use key directly for two-way binding
     text_input = st.text_area(
         'News Text',
-        value=st.session_state['text_input'],
         height=200,
         placeholder='Paste your news article, headline, or statement here...',
         label_visibility='collapsed',
         key='main_text_input'
     )
-    # Update session state when text changes
-    st.session_state['text_input'] = text_input
 
 with col2:
     st.subheader('📋 Example Texts')
@@ -307,42 +309,36 @@ with col2:
     # Load examples from test_samples.json
     if test_samples and 'real_samples' in test_samples and 'fake_samples' in test_samples:
         with col_real:
-            if st.button('📰 Real News', use_container_width=True):
+            if st.button('📰 Real News', use_container_width=True, key='real_btn'):
                 real_samples = test_samples.get('real_samples', [])
                 if real_samples:
                     sample = random.choice(real_samples)
                     full_text = sample.get('full_text', sample.get('text', ''))
                     if full_text:
-                        st.session_state['text_input'] = full_text
-                        st.rerun()
-                    else:
-                        st.error("No text found in sample")
+                        # Update directly through session state
+                        st.session_state['main_text_input'] = full_text
         
         with col_fake:
-            if st.button('⚠️ Fake News', use_container_width=True):
+            if st.button('⚠️ Fake News', use_container_width=True, key='fake_btn'):
                 fake_samples = test_samples.get('fake_samples', [])
                 if fake_samples:
                     sample = random.choice(fake_samples)
                     full_text = sample.get('full_text', sample.get('text', ''))
                     if full_text:
-                        st.session_state['text_input'] = full_text
-                        st.rerun()
-                    else:
-                        st.error("No text found in sample")
+                        # Update directly through session state
+                        st.session_state['main_text_input'] = full_text
     else:
         # Fallback examples if test_samples.json can't be loaded
         st.warning("⚠️ Could not load real examples from GitHub")
         st.info("Using hardcoded examples instead")
         
         with col_real:
-            if st.button('📰 Real News', use_container_width=True):
-                st.session_state['text_input'] = "WASHINGTON (Reuters) - U.S. President Donald Trump will nominate Goldman Sachs banker James Donovan as deputy Treasury secretary, the White House said on Tuesday. Treasury Secretary Steven Mnuchin and National Economic Council director Gary Cohn are also former Goldman executives who occupy senior economic posts within the administration."
-                st.rerun()
+            if st.button('📰 Real News', use_container_width=True, key='real_btn_fallback'):
+                st.session_state['main_text_input'] = "WASHINGTON (Reuters) - U.S. President Donald Trump will nominate Goldman Sachs banker James Donovan as deputy Treasury secretary, the White House said on Tuesday. Treasury Secretary Steven Mnuchin and National Economic Council director Gary Cohn are also former Goldman executives who occupy senior economic posts within the administration."
         
         with col_fake:
-            if st.button('⚠️ Fake News', use_container_width=True):
-                st.session_state['text_input'] = "SHOCKING! This amazing secret will blow your mind! You won't believe what doctors don't want you to know! Click here before it's deleted! This incredible discovery could change your life forever!"
-                st.rerun()
+            if st.button('⚠️ Fake News', use_container_width=True, key='fake_btn_fallback'):
+                st.session_state['main_text_input'] = "SHOCKING! This amazing secret will blow your mind! You won't believe what doctors don't want you to know! Click here before it's deleted! This incredible discovery could change your life forever!"
 
 # ============================================================================
 # ANALYSIS
